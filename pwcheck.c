@@ -4,20 +4,22 @@
  */
 
 #include <stdio.h>
+
 #include <stdlib.h>
 
 #define MAXLEN 102
 
 /**
  * structure holding data necessary for printing statistics
- * array characters used for keeping track of letters, which already occured
+ * array char_count used for keeping track of letters, which already occured
  */
 typedef struct {
-  unsigned int characters[255];
-  unsigned int min_len;
+  // as we only care for char_count (32-126), we don't need to use whole 255 ascii character
+  int char_count[94];
+  int min_len;
   float n_of_char;
-  unsigned int n_of_pass;
-  unsigned int unique;
+  int n_of_pass;
+  int unique;
 }
 Stats;
 
@@ -102,35 +104,37 @@ int string_compare(char * s1, char * s2, int size) {
  */
 void update_stats(char password[], Stats * stats, int size) {
   stats -> n_of_pass += 1;
+  stats -> n_of_char += size;
+  stats -> min_len = min(stats -> min_len, size);
   for (int i = 0; i < size; i++) {
     char letter = password[i];
     // change current letter to ascii value
     int ascii = (int) letter;
+    ascii -= 32;
     // check if current letter is in range of ascii values (32-126)
     if (letter >= ' ' && letter <= '~') {
       // check if the letter has already been spotted at index of its ascii value
-      if (stats -> characters[ascii] != 1) {
+      if (stats -> char_count[ascii] != 1) {
         stats -> unique++;
-        stats -> characters[ascii] = 1;
+        stats -> char_count[ascii] = 1;
       }
     }
   }
 }
 
-
 int level1(char password[], int size) {
-  int sm_lett = 0, cap_lett = 0;
+  int low_lett = 0, cap_lett = 0;
   for (int i = 0; i < size; i++) {
     char ch = password[i];
     // if current letter is capital (A-Z), increment capital counter
     if (ch >= 'A' && ch <= 'Z') {
       cap_lett++;
-      // if current letter is small (a-z), increment small letter counter
+      // if current letter is lowercase (a-z), increment lowercase letter counter
     } else if (ch >= 'a' && ch <= 'z') {
-      sm_lett++;
+      low_lett++;
     }
   }
-  if (sm_lett > 0 && cap_lett > 0) {
+  if (low_lett > 0 && cap_lett > 0) {
     return 1;
   }
   return 0;
@@ -138,18 +142,18 @@ int level1(char password[], int size) {
 
 int level2(char password[], int size, long param) {
   // at start of every level (excluding level 1), check if the previous level was completed
-  // otherwise return 0, meaning password doesnt meet the security level given
+  // otherwise return 0, meaning password doesn't meet the security level given
   if (!level1(password, size)) {
     return 0;
   }
-  // if the level 1 was completed, small and capital letter must be in the password
-  // categories found can be therefore set to 2
+  // if the level 1 was completed, lowercase and capital letter must be in the password
+  // categories found can therefore be set to 2
   int categories_found = 2;
   int num_found = 0;
   int spec_char_found = 0;
   for (int i = 0; i < size; i++) {
     char letter = password[i];
-    // check, if current letter is number
+    // check, if the current letter is number
     if (letter >= '0' && letter <= '9') {
       num_found = 1;
       // if current letter isn't number and alphabetical character, it must be special character
@@ -179,13 +183,12 @@ int level3(char password[], int size, long param) {
     if (counter >= param) {
       return 0;
     }
-    // if current letter == last_char, increment counter
     if (password[i] == last_char) {
       counter++;
       if (counter >= param) {
         return 0;
       }
-      // if the current letter does not match with previous letter, reset the counter
+      // if the current letter does not match with the previous letter, reset the counter
       // set last_char to current letter for further comparison
     } else {
       last_char = password[i];
@@ -199,17 +202,23 @@ int level4(char password[], int size, long param) {
   if (!level3(password, size, param)) {
     return 0;
   }
-  // create and initialize two char arrays, which will be used for creating substrings
+  // create and initialize char array, which will be used for creating a substring
   char substring1[MAXLEN] = {};
-  char substring2[MAXLEN] = {};
   for (int i = 0; i < size - param + 1; i++) {
     // create substring 1
     if (get_substring(password, substring1, i, i + param - 1, size)) {
       for (int j = i + 1; j < size - param + 1; j++) {
-        // create substring 2
-        if (get_substring(password, substring2, j, j + param - 1, size)) {
-          // compare substrings and return 0 if they match
-          if (string_compare(substring1, substring2, param)) {
+        int index = 0;
+        int counter = 0;
+        // compare created substring1 with letters in password for match
+        for (int k = j; k < j + param; k++) {
+          if (substring1[index] != password[k]) {
+            break;
+          } else if (substring1[index] == password[k]) {
+            counter++;
+            index++;
+          }
+          if (index == param) {
             return 0;
           }
         }
@@ -265,8 +274,6 @@ void switch_level(int level, long param, char password[], int size) {
 
 /**
  * verify, if arguments entered are valid according to the instructions
- *
- * @param stats struct containing statistics data to be printed
  */
 int param_error_handling(int argc, char * argv[], long * level_f, long * param_f) {
   char * ptr1, * ptr2;
@@ -290,7 +297,7 @@ int param_error_handling(int argc, char * argv[], long * level_f, long * param_f
       fprintf(stderr, "Err: wrong last argument!\n");
       return 1;
     }
-    // verify, it param and level arguments don't include characters others than numbers
+    // verify, it param and level arguments don't include char_count others than numbers
     if (ptr1[0] != '\0' || ptr2[0] != '\0') {
       fprintf(stderr, "Err: wrong argument format!\n");
       return 1;
@@ -310,11 +317,15 @@ int param_error_handling(int argc, char * argv[], long * level_f, long * param_f
 int main(int argc, char * argv[]) {
   long level;
   long param;
+  // initialize stats struct and its values
   Stats stats;
   stats.min_len = 100;
   stats.unique = 0;
   stats.n_of_char = 0;
   stats.n_of_pass = 0;
+  for (int i = 0; i < 94; i++) {
+    stats.char_count[i] = 0;
+  }
   if (param_error_handling(argc, argv, & level, & param)) {
     return EXIT_FAILURE;
   }
@@ -322,8 +333,6 @@ int main(int argc, char * argv[]) {
   while (fgets(password, MAXLEN, stdin) != NULL) {
     int size = string_length(password);
     if (size <= 100) {
-      stats.min_len = min(stats.min_len, size);
-      stats.n_of_char += size;
       update_stats(password, & stats, size);
       switch_level(level, param, password, size);
     } else {
