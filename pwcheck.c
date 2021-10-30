@@ -97,6 +97,16 @@ int string_compare(char * s1, char * s2, int size) {
   return 0;
 }
 
+void initialize_stats(Stats *stats) {
+  stats -> min_len = 100;
+  stats -> unique = 0;
+  stats -> n_of_char = 0;
+  stats -> n_of_pass = 0;
+  for (int i = 0; i < 94; i++) {
+    stats -> char_count[i] = 0;
+  }
+}
+
 /**
  * update stats after getting new password
  *
@@ -120,6 +130,22 @@ void update_stats(char password[], Stats * stats, int size) {
       }
     }
   }
+}
+
+/**
+ * print statistics
+ *
+ * @param stats struct containing statistics data to be printed
+ */
+void statistics(Stats stats) {
+  printf("Statistika:\n");
+  printf("Ruznych znaku: %d\n", stats.unique);
+  printf("Minimalni delka: %d\n", stats.min_len);
+  float average = 0;
+  if (stats.n_of_pass != 0) {
+    average = stats.n_of_char / stats.n_of_pass;
+  }
+  printf("Prumerna delka: %.1f\n", average);
 }
 
 int level1(char password[], int size) {
@@ -229,22 +255,6 @@ int level4(char password[], int size, long param) {
 }
 
 /**
- * print statistics
- *
- * @param stats struct containing statistics data to be printed
- */
-void statistics(Stats stats) {
-  printf("Statistika:\n");
-  printf("Ruznych znaku: %d\n", stats.unique);
-  printf("Minimalni delka: %d\n", stats.min_len);
-  float average = 0;
-  if (stats.n_of_pass != 0) {
-    average = stats.n_of_char / stats.n_of_pass;
-  }
-  printf("Prumerna delka: %.1f\n", average);
-}
-
-/**
  * call particular level function according to the level entered
  */
 void switch_level(int level, long param, char password[], int size) {
@@ -319,13 +329,7 @@ int main(int argc, char * argv[]) {
   long param;
   // initialize stats struct and its values
   Stats stats;
-  stats.min_len = 100;
-  stats.unique = 0;
-  stats.n_of_char = 0;
-  stats.n_of_pass = 0;
-  for (int i = 0; i < 94; i++) {
-    stats.char_count[i] = 0;
-  }
+  initialize_stats(& stats);
   if (param_error_handling(argc, argv, & level, & param)) {
     return EXIT_FAILURE;
   }
