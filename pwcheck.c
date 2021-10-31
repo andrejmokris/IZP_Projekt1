@@ -1,5 +1,5 @@
 /**
- * @name Projekt 1 - Práce s textem
+ * @name Projekt 1 - Prace s textem
  * @author Andrej Mokris <xmokri01>
  */
 
@@ -120,6 +120,7 @@ void update_stats(char password[], Stats * stats, int size) {
     char letter = password[i];
     // change current letter to ascii value
     int ascii = (int) letter;
+    // subtract 32 because we only use array of length 94
     ascii -= 32;
     // check if current letter is in range of ascii values (32-126)
     if (letter >= ' ' && letter <= '~') {
@@ -287,8 +288,7 @@ void switch_level(int level, long param, char password[], int size) {
  */
 int param_error_handling(int argc, char * argv[], long * level_f, long * param_f) {
   char * ptr1, * ptr2;
-  long level;
-  long param;
+  long level, param;
   // verify the numbers of arguments given
   if (argc > 2 && argc < 5) {
     level = strtol(argv[1], & ptr1, 10);
@@ -325,8 +325,7 @@ int param_error_handling(int argc, char * argv[], long * level_f, long * param_f
 }
 
 int main(int argc, char * argv[]) {
-  long level;
-  long param;
+  long level, param;
   // initialize stats struct and its values
   Stats stats;
   initialize_stats(& stats);
